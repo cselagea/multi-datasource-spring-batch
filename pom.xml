@@ -11,10 +11,10 @@
     </parent>
 
     <groupId>io.github.cselagea.batch</groupId>
-    <artifactId>spring-batch-testcontainers</artifactId>
+    <artifactId>multi-datasource-spring-batch</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <name>spring-batch-testcontainers</name>
-    <description>Testing of Spring Batch job using Testcontainers</description>
+    <name>multi-datasource-spring-batch</name>
+    <description>A Spring Batch job that connects to two data sources: one containing Spring Batch data and the other job-specific data</description>
 
     <properties>
         <java.version>8</java.version>
@@ -26,10 +26,7 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-batch</artifactId>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.liquibase</groupId>-->
-<!--            <artifactId>liquibase-core</artifactId>-->
-<!--        </dependency>-->
+
         <dependency>
             <groupId>com.microsoft.sqlserver</groupId>
             <artifactId>mssql-jdbc</artifactId>
