@@ -23,10 +23,9 @@ public class BatchJobConfiguration {
     private StepBuilderFactory stepBuilderFactory;
 
     @Bean
-    public Job importUserJob(JobCompletionListener listener, Step step1) {
+    public Job importUserJob(Step step1) {
         return jobBuilderFactory.get("importUserJob")
                                 .incrementer(new RunIdIncrementer())
-                                .listener(listener)
                                 .start(step1)
                                 .build();
     }
