@@ -6,49 +6,44 @@ import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.test.JobLauncherTestUtils;
 import org.springframework.batch.test.context.SpringBatchTest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.ConfigFileApplicationContextInitializer;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.testcontainers.containers.JdbcDatabaseContainer;
-import org.testcontainers.containers.MSSQLServerContainer;
+import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.util.List;
-import java.util.logging.LogManager;
 
-import static io.github.cselagea.batch.BatchDataSourceConfiguration.BATCH_FRAMEWORK_DATA_SOURCE_CONFIG_PREFIX;
-import static io.github.cselagea.batch.BatchDataSourceConfiguration.BATCH_JOB_DATA_SOURCE_CONFIG_PREFIX;
+import static io.github.cselagea.batch.DataSourceConfiguration.APP_DATA_SOURCE_CONFIG_PREFIX;
+import static io.github.cselagea.batch.DataSourceConfiguration.BATCH_DATA_SOURCE_CONFIG_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 @SpringBatchTest
 @ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = BatchProcessingApplication.class)
+@ContextConfiguration(classes = BatchProcessingApplication.class, initializers = ConfigFileApplicationContextInitializer.class)
 @Testcontainers
 class BatchProcessingApplicationTest {
 
-    private static final DockerImageName sqlServerImageName
-            = DockerImageName.parse("mcr.microsoft.com/mssql/server:2019-CU6-ubuntu-16.04");
+    private static final DockerImageName postgresImageName = DockerImageName.parse("postgres:alpine");
 
     @Container
-    private static final JdbcDatabaseContainer<?> batchJobSpecificSqlServerContainer
-            = new MSSQLServerContainer<>(sqlServerImageName)
-            .acceptLicense()
-            .withInitScript("batch-job-schema-mssql.sql");
+    private static final JdbcDatabaseContainer<?> appDatabaseContainer
+            = new PostgreSQLContainer<>(postgresImageName)
+            .withUsername("db1_user")
+            .withPassword("pass");
 
     @Container
-    private static final JdbcDatabaseContainer<?> batchFrameworkSqlServerContainer
-            = new MSSQLServerContainer<>(sqlServerImageName)
-            .acceptLicense()
-            .withInitScript("org/springframework/batch/core/schema-sqlserver.sql");
-
-    static {
-        LogManager.getLogManager().reset(); // disable warning messages produced by JDBC driver trying to connect before server is ready
-    }
+    private static final JdbcDatabaseContainer<?> batchDatabaseContainer
+            = new PostgreSQLContainer<>(postgresImageName)
+            .withUsername("db2_user")
+            .withPassword("pass");
 
     @Autowired
     private JobLauncherTestUtils jobLauncherTestUtils;
@@ -58,12 +53,12 @@ class BatchProcessingApplicationTest {
 
     @DynamicPropertySource
     static void registerDataSourceProperties(DynamicPropertyRegistry registry) {
-        registry.add(BATCH_FRAMEWORK_DATA_SOURCE_CONFIG_PREFIX + ".url", batchFrameworkSqlServerContainer::getJdbcUrl);
-        registry.add(BATCH_FRAMEWORK_DATA_SOURCE_CONFIG_PREFIX + ".username", batchFrameworkSqlServerContainer::getUsername);
-        registry.add(BATCH_FRAMEWORK_DATA_SOURCE_CONFIG_PREFIX + ".password", batchFrameworkSqlServerContainer::getPassword);
-        registry.add(BATCH_JOB_DATA_SOURCE_CONFIG_PREFIX + ".url", batchJobSpecificSqlServerContainer::getJdbcUrl);
-        registry.add(BATCH_JOB_DATA_SOURCE_CONFIG_PREFIX + ".username", batchJobSpecificSqlServerContainer::getUsername);
-        registry.add(BATCH_JOB_DATA_SOURCE_CONFIG_PREFIX + ".password", batchJobSpecificSqlServerContainer::getPassword);
+        registry.add(BATCH_DATA_SOURCE_CONFIG_PREFIX + ".url", batchDatabaseContainer::getJdbcUrl);
+        registry.add(BATCH_DATA_SOURCE_CONFIG_PREFIX + ".username", batchDatabaseContainer::getUsername);
+        registry.add(BATCH_DATA_SOURCE_CONFIG_PREFIX + ".password", batchDatabaseContainer::getPassword);
+        registry.add(APP_DATA_SOURCE_CONFIG_PREFIX + ".url", appDatabaseContainer::getJdbcUrl);
+        registry.add(APP_DATA_SOURCE_CONFIG_PREFIX + ".username", appDatabaseContainer::getUsername);
+        registry.add(APP_DATA_SOURCE_CONFIG_PREFIX + ".password", appDatabaseContainer::getPassword);
     }
 
     @Test
